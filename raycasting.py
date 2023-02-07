@@ -202,6 +202,7 @@ def make_map(map_string):
     result = []
     lines = map_string.split("\n")
 
+    # start from top of map and work down
     y = len(lines)
 
     for line in lines:
@@ -306,14 +307,13 @@ game_map = """
 map_wall_segments = make_map(game_map)
 
 pygame.init()
-pygame.key.set_repeat(1)
 
-width = 640
+width = 1024
 height = 480
 
 screen = pygame.display.set_mode((width, height))
 
-c = Camera(Point(-0.5, -0.5), math.pi / 2, math.pi / 2)
+c = Camera(Point(-0.5, -0.5), math.pi / 2, (width / height) * (math.pi / 2))
 
 frame = 0
 last_time = time.perf_counter()
@@ -333,15 +333,16 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                c.try_move(-0.01, map_wall_segments)
-            if event.key == pygame.K_DOWN:
-                c.try_move(0.01, map_wall_segments)
-            if event.key == pygame.K_RIGHT:
-                c.rotate(math.pi / 720)
-            if event.key == pygame.K_LEFT:
-                c.rotate(-math.pi / 720)
+    keys = pygame.key.get_pressed()
+
+    if keys[pygame.K_UP]:
+        c.try_move(-0.08, map_wall_segments)
+    if keys[pygame.K_DOWN]:
+        c.try_move(0.08, map_wall_segments)
+    if keys[pygame.K_RIGHT]:
+        c.rotate(math.pi / 60)
+    if keys[pygame.K_LEFT]:
+        c.rotate(-math.pi / 60)
 
     col = 0
 
