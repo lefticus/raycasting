@@ -95,6 +95,10 @@ class Segment:
         return (self.start - self.end).length()
 
     @functools.cached_property
+    def direction(self):
+        return math.acos(self.normal.x) if self.normal.y <= 0.0 else -math.acos(self.normal.x)
+
+    @functools.cached_property
     def normal(self):
         return (self.end - self.start).normal()
 
@@ -110,13 +114,12 @@ class Segment:
         return in_range(self.min_x, self.max_x, p.x) and in_range(
             self.min_y, self.max_y, p.y
         )
-
+    
     def ray(self):
-        return Ray(
-            self.start,
-            -math.atan2(self.end.y - self.start.y, self.end.x - self.start.x)
-            + math.pi / 2,
-        )
+        # Introduce a tiny bit of error to fix a bug with rays
+        # not intersecting walls when we're axis-aligned.
+        episilon = 0.0001
+        return Ray(self.start, self.direction + math.pi / 2 + episilon)
 
 
 @dataclasses.dataclass
@@ -527,7 +530,15 @@ height = 480
 
 screen = pygame.display.set_mode((width, height))
 
-c = Camera(Point(-0.5, -0.5), math.pi / 2, (width / height))
+c = Camera(Point(9, 14), math.pi, (width / height) * (math.pi / 4))
+m = MapDisplay(
+    map_wall_segments, # Map Walls to calculate Dimensions
+    (Point(2.0, 2.0), Point(2.0, 10.0)), # Padding for the 2d Display
+    (256, 256), # 2d Display Size
+    DebugOptions([
+        DebugOption(pygame.K_r, 'draw_rays', True),
+    ])
+)
 
 frame = 0
 last_time = time.perf_counter()
@@ -571,6 +582,9 @@ while True:
     last_match = None
     last_wall = None
 
+    ray_results = []
+    display_2d_map = debug_options['display_2d_map']
+
     for r, segment_point in c.rays(width):
         matches = intersect_ray(r, map_wall_segments)
 
@@ -582,12 +596,17 @@ while True:
 
         # only draw the closest wall.
         if len(matches) > 0 and matches[0][0] != 0:
-            distance_from_eye = matches[0][0]
+            distance = matches[0][0]
+            color = (255, 255, 255)
+            
+            if debug_options['use_planar_approximation']:
+                distance = distance * math.cos(r.angle - c.direction)
+            
+            if debug_options['use_alternate_coloring']:
+                dot = matches[0][2].forward.dot(c.forward())
+                color = (160 + 95 * dot, 160 + 95 * dot, 160 + 95 * dot)
 
-            # Distance correction from https://gamedev.stackexchange.com/questions/45295/raycasting-fisheye-effect-question
-            corrected_distance = distance_from_eye * math.cos(c.direction - r.angle)
-
-            wall_height = (height * 0.75) / corrected_distance
+            wall_height = (height * 0.75) / distance # Distance
             if wall_height > height:
                 wall_height = height + 2
 
