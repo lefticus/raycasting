@@ -62,6 +62,13 @@ class Segment:
             self.min_y, self.max_y, p.y
         )
 
+    def ray(self):
+        return Ray(
+            self.start,
+            -math.atan2(self.end.y - self.start.y, self.end.x - self.start.x)
+            + math.pi / 2,
+        )
+
 
 @dataclasses.dataclass
 class Ray:
@@ -149,12 +156,33 @@ class Camera:
         self.direction += angle
 
     def rays(self, count):
-        angle_slice = self.viewing_angle / count
-        start_angle = self.direction - (self.viewing_angle / 2) + angle_slice / 2
+        # The idea is that we are creating a line
+        # through which to draw the rays, so we get a more correct
+        # (not curved) distribution of rays, but we still need
+        # to do a height correction later to flatten it out
+        start_angle = self.direction - self.viewing_angle / 2
+        end_angle = start_angle + self.viewing_angle
+
+        viewing_plane_start = self.location + Point(
+            math.sin(start_angle), math.cos(start_angle)
+        )
+        viewing_plane_end = self.location + Point(
+            math.sin(end_angle), math.cos(end_angle)
+        )
+
+        d_x = (viewing_plane_end.x - viewing_plane_start.x) / count
+        d_y = (viewing_plane_end.y - viewing_plane_start.y) / count
+
         location = self.location
 
         for current in range(count):
-            yield Ray(location, angle_slice * current + start_angle)
+            plane_point = Point(
+                viewing_plane_start.x + (d_x * current),
+                viewing_plane_start.y + (d_y * current),
+            )
+            ray_segment = Segment(location, plane_point)
+
+            yield ray_segment.ray(), plane_point
 
 
 def box(ul: Point):
@@ -308,12 +336,12 @@ map_wall_segments = make_map(game_map)
 
 pygame.init()
 
-width = 1024
+width = 800
 height = 480
 
 screen = pygame.display.set_mode((width, height))
 
-c = Camera(Point(-0.5, -0.5), math.pi / 2, (width / height) * (math.pi / 2))
+c = Camera(Point(-0.5, -0.5), math.pi / 2, (width / height))
 
 frame = 0
 last_time = time.perf_counter()
@@ -349,7 +377,7 @@ while True:
     last_match = None
     last_wall = None
 
-    for r in c.rays(width):
+    for r, segment_point in c.rays(width):
         matches = intersect_ray(r, map_wall_segments)
 
         def sort_criteria(line):
@@ -360,7 +388,12 @@ while True:
 
         # only draw the closest wall.
         if len(matches) > 0 and matches[0][0] != 0:
-            wall_height = (height * 0.75) / matches[0][0]  # Distance
+            distance_from_eye = matches[0][0]
+
+            # Distance correction from https://gamedev.stackexchange.com/questions/45295/raycasting-fisheye-effect-question
+            corrected_distance = distance_from_eye * math.cos(c.direction - r.angle)
+
+            wall_height = (height * 0.75) / corrected_distance
             if wall_height > height:
                 wall_height = height + 2
 
