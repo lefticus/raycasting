@@ -31,6 +31,9 @@ class Point(typing.NamedTuple):
     def __mul__(self, other):
         return Point(self.x * other.x, self.y * other.y)
 
+    def __rmul__(self, other: float):
+        return Point(self.x * other, self.y * other)
+
     def __div__(self, other):
         return Point(self.x / other.x, self.y / other.y)
     
@@ -66,7 +69,8 @@ class Line(typing.NamedTuple):
 @dataclasses.dataclass(unsafe_hash=True)
 class Segment:
     # Constant used to determine what a Segment's forward normal should be
-    ForwardDirection = Point(math.sin(math.pi / 2), math.cos(math.pi / 2))
+    ForwardDirection = Point(math.cos(math.pi / 2), math.sin(math.pi / 2))
+    LeftDirection = Point(-math.sin(math.pi / 2), math.cos(math.pi / 2))
 
     start: Point
     end: Point
@@ -108,7 +112,7 @@ class Segment:
 
     @functools.cached_property
     def forward(self):
-        return (self.normal + Segment.ForwardDirection).normal()
+        return (self.normal.x * Segment.ForwardDirection + self.normal.y * Segment.LeftDirection).normal()
 
     @functools.cached_property
     def line(self):
@@ -609,6 +613,8 @@ while True:
 
     ray_results = []
     display_2d_map = debug_options['display_2d_map']
+    use_planar_approximation = debug_options['use_planar_approximation']
+    use_alternate_coloring = debug_options['use_alternate_coloring']
 
     for r, segment_point in c.rays(width):
         matches = intersect_ray(r, map_wall_segments)
@@ -624,12 +630,13 @@ while True:
             distance = matches[0][0]
             color = (255, 255, 255)
             
-            if debug_options['use_planar_approximation']:
+            if use_planar_approximation:
                 distance = distance * math.cos(r.angle - c.direction)
             
-            if debug_options['use_alternate_coloring']:
-                dot = matches[0][2].forward.dot(c.forward())
-                color = (160 + 95 * dot, 160 + 95 * dot, 160 + 95 * dot)
+            if use_alternate_coloring:
+                forward = matches[0][2].forward
+                dot = forward.dot(c.forward())
+                color = (int(128 + 127 * forward.x) * (-dot + 1.0) * 0.5, int(128 + 127 * forward.y) * (-dot + 1.0) * 0.5, 0)
 
             wall_height = (height * 0.75) / distance # Distance
             if wall_height > height:
