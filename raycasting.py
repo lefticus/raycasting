@@ -40,6 +40,10 @@ class Point(typing.NamedTuple):
     def length(self):
         return math.sqrt(self.dot(self))
 
+    def direction(self):
+        normal = self.normal()
+        return math.acos(normal.x) if normal.y <= 0.0 else -math.acos(normal.x)
+
     def normal(self):
         length = self.length()
         if length == 0.0:
@@ -193,9 +197,9 @@ class Camera:
         self.direction = direction
         self.viewing_angle = viewing_angle
 
-    def try_move(self, distance, walls):
+    def try_move(self, distance, walls, direction: float = 0.0):
         new_location = self.location + Point(
-            distance * -math.sin(self.direction), distance * -math.cos(self.direction)
+            distance * -math.sin(self.direction + direction), distance * -math.cos(self.direction + direction)
         )
 
         proposed_move = Segment(self.location, new_location)
@@ -528,6 +532,8 @@ pygame.init()
 width = 800
 height = 480
 
+mouse_sensitivity = 0.25    
+
 screen = pygame.display.set_mode((width, height))
 
 c = Camera(Point(9, 14), math.pi, (width / height) * (math.pi / 4))
@@ -568,14 +574,33 @@ while True:
     m.tick(elapsed)
     debug_options.toggle(elapsed)
 
-    if keys[pygame.K_UP]:
-        c.try_move(-2 * elapsed, map_wall_segments)
-    if keys[pygame.K_DOWN]:
-        c.try_move(2 * elapsed, map_wall_segments)
+    movement = Point(0.0, 0.0)
+    movement_speed = 1.0
+    if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+        movement_speed *= 2.0
+
+    if keys[pygame.K_UP] or keys[pygame.K_w]:
+        movement += Point(1.0, 0.0)
+    if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+        movement -= Point(1.0, 0.0)
+    if keys[pygame.K_a]:
+        movement += Point(0.0, 1.0)
+    if keys[pygame.K_d]:
+        movement -= Point(0.0, 1.0)
     if keys[pygame.K_RIGHT]:
         c.rotate(math.pi / 3 * elapsed)
     if keys[pygame.K_LEFT]:
         c.rotate(-math.pi / 3 * elapsed)
+    
+    if movement.length() > 0.0:
+        c.try_move(-movement_speed * elapsed, map_wall_segments, movement.direction())
+    
+    if pygame.mouse.get_focused():
+        pygame.mouse.set_visible(False)
+        pygame.mouse.set_pos((width * 0.5, height * 0.5))
+        mouse_rel = pygame.mouse.get_rel()
+        if mouse_rel[0] != 0.0:
+            c.rotate(mouse_rel[0] * math.pi / 360 * mouse_sensitivity)
 
     col = 0
 
@@ -666,3 +691,7 @@ while True:
         m.draw(map_wall_segments, c, ray_results)
 
     pygame.display.flip()
+    
+    if keys[pygame.K_ESCAPE]:
+        pygame.quit()
+        break
