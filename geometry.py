@@ -5,6 +5,7 @@ import math
 
 VERTICAL_SLOPE = 1e100
 
+
 # Floating point math is hard, and trying to find a point on a line
 # can result in some mismatches in floating point values, so we go for "close"
 def in_range(min_, max_, value):
@@ -54,14 +55,31 @@ class Segment:
 
     @functools.cached_property
     def line(self):
+        if self.start == self.end:
+            # no possible valid Ray object
+            raise RuntimeError("Cannot create Line from identical segment points")
+
         return Line(self.start, self.slope)
 
     def on_segment(self, p: Point):
+        if p == self.start:
+            return True
+
+        segment = Segment(self.start, p)
+        return math.isclose(segment.slope, self.slope) and self.in_bounds(p)
+
+    def in_bounds(self, p: Point):
         return in_range(self.min_x, self.max_x, p.x) and in_range(
             self.min_y, self.max_y, p.y
         )
 
-    def ray(self):
+    def to_ray(self):
+        if self.start == self.end:
+            # no possible valid Ray object
+            raise RuntimeError("Cannot create Ray from identical segment points")
+
+        # Correct from angle above x axis as returned by atan2, to angle
+        # away from y axis, as is in our coordinate system
         return Ray(
             self.start,
             -math.atan2(self.end.y - self.start.y, self.end.x - self.start.x)
@@ -77,7 +95,7 @@ class Ray:
     def to_line(self):
         s = math.sin(self.angle)
         if s == 0:
-            return Line(self.start, 1e100)
+            return Line(self.start, VERTICAL_SLOPE)
         else:
             return Line(self.start, math.cos(self.angle) / s)
 
@@ -128,7 +146,7 @@ def intersecting_segments(input_: Segment, segments):
         if input_line.slope != segment_line.slope:
             p = intercept(input_line, segment_line)
 
-            if segment.on_segment(p) and input_.on_segment(p):
+            if segment.in_bounds(p) and input_.in_bounds(p):
                 result.append((math.dist(input_.start, p), p, segment))
 
     return result

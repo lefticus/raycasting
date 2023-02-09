@@ -1,9 +1,6 @@
-import math
 import pygame
 import time
 from geometry import *
-
-
 
 
 class Camera:
@@ -56,7 +53,7 @@ class Camera:
                 )
                 ray_segment = Segment(location, plane_point)
 
-                yield ray_segment.ray(), plane_point
+                yield ray_segment.to_ray(), plane_point
         else:
             angle_slice = self.viewing_angle / count
 
@@ -222,7 +219,7 @@ height = 480
 
 screen = pygame.display.set_mode((width, height))
 
-FOV = 2 * math.atan ( (width / 800) * math.tan ((math.pi/2) / 2 ) )
+FOV = 2 * math.atan((width / 800) * math.tan((math.pi / 2) / 2))
 
 c = Camera(Point(-0.5, -0.5), math.pi / 2, FOV)
 
