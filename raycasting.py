@@ -140,10 +140,11 @@ class Camera:
         self.location = location
         self.direction = direction
         self.viewing_angle = viewing_angle
+        self.planar_projection = True
 
     def try_move(self, distance, walls):
         new_location = self.location + Point(
-            distance * -math.sin(self.direction), distance * -math.cos(self.direction)
+            distance * math.sin(self.direction), distance * math.cos(self.direction)
         )
 
         proposed_move = Segment(self.location, new_location)
@@ -160,29 +161,38 @@ class Camera:
         # through which to draw the rays, so we get a more correct
         # (not curved) distribution of rays, but we still need
         # to do a height correction later to flatten it out
+
         start_angle = self.direction - self.viewing_angle / 2
         end_angle = start_angle + self.viewing_angle
 
-        viewing_plane_start = self.location + Point(
-            math.sin(start_angle), math.cos(start_angle)
-        )
-        viewing_plane_end = self.location + Point(
-            math.sin(end_angle), math.cos(end_angle)
-        )
-
-        d_x = (viewing_plane_end.x - viewing_plane_start.x) / count
-        d_y = (viewing_plane_end.y - viewing_plane_start.y) / count
-
-        location = self.location
-
-        for current in range(count):
-            plane_point = Point(
-                viewing_plane_start.x + (d_x * current),
-                viewing_plane_start.y + (d_y * current),
+        if self.planar_projection:
+            viewing_plane_start = self.location + Point(
+                math.sin(start_angle), math.cos(start_angle)
             )
-            ray_segment = Segment(location, plane_point)
+            viewing_plane_end = self.location + Point(
+                math.sin(end_angle), math.cos(end_angle)
+            )
 
-            yield ray_segment.ray(), plane_point
+            d_x = (viewing_plane_end.x - viewing_plane_start.x) / count
+            d_y = (viewing_plane_end.y - viewing_plane_start.y) / count
+
+            location = self.location
+
+            for current in range(count):
+                plane_point = Point(
+                    viewing_plane_start.x + (d_x * current),
+                    viewing_plane_start.y + (d_y * current),
+                )
+                ray_segment = Segment(location, plane_point)
+
+                yield ray_segment.ray(), plane_point
+        else:
+            angle_slice = self.viewing_angle / count
+
+            for current in range(count):
+                yield Ray(
+                    self.location, start_angle + current * angle_slice
+                ), self.location
 
 
 def box(ul: Point):
@@ -336,15 +346,19 @@ map_wall_segments = make_map(game_map)
 
 pygame.init()
 
-width = 800
+width = 1280
 height = 480
 
 screen = pygame.display.set_mode((width, height))
 
-c = Camera(Point(-0.5, -0.5), math.pi / 2, (width / height))
+FOV = 2 * math.atan ( (width / 800) * math.tan ((math.pi/2) / 2 ) )
+
+c = Camera(Point(-0.5, -0.5), math.pi / 2, FOV)
 
 frame = 0
 last_time = time.perf_counter()
+
+fisheye_distance_correction = True
 
 while True:
     pygame.display.get_surface().fill((0, 0, 0))
@@ -360,13 +374,18 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_1:
+                c.planar_projection = not c.planar_projection
+            if event.key == pygame.K_2:
+                fisheye_distance_correction = not fisheye_distance_correction
 
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_UP]:
-        c.try_move(-0.08, map_wall_segments)
-    if keys[pygame.K_DOWN]:
         c.try_move(0.08, map_wall_segments)
+    if keys[pygame.K_DOWN]:
+        c.try_move(-0.08, map_wall_segments)
     if keys[pygame.K_RIGHT]:
         c.rotate(math.pi / 60)
     if keys[pygame.K_LEFT]:
@@ -391,7 +410,11 @@ while True:
             distance_from_eye = matches[0][0]
 
             # Distance correction from https://gamedev.stackexchange.com/questions/45295/raycasting-fisheye-effect-question
-            corrected_distance = distance_from_eye * math.cos(c.direction - r.angle)
+            corrected_distance = (
+                distance_from_eye * math.cos(c.direction - r.angle)
+                if fisheye_distance_correction
+                else distance_from_eye
+            )
 
             wall_height = (height * 0.75) / corrected_distance
             if wall_height > height:
