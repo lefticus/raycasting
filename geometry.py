@@ -4,6 +4,7 @@ import typing
 import math
 
 VERTICAL_SLOPE = 1e100
+DISTANT_POINT = 100
 
 
 # Floating point math is hard, and trying to find a point on a line
@@ -93,16 +94,18 @@ class Ray:
     angle: float
 
     def to_line(self):
-        s = math.sin(self.angle)
-        if s == 0:
+        angle = self.angle % (2 * math.pi)
+        if math.isclose(angle, 0):
             return Line(self.start, VERTICAL_SLOPE)
+        elif math.isclose(angle, math.pi):
+            return Line(self.start, -VERTICAL_SLOPE)
         else:
-            return Line(self.start, math.cos(self.angle) / s)
+            return Line(self.start, math.cos(angle) / math.sin(angle))
 
     def distant_point(self):
         return Point(
-            self.start.x + (math.sin(self.angle) * 100),
-            self.start.y + (math.cos(self.angle) * 100),
+            self.start.x + (math.sin(self.angle) * DISTANT_POINT),
+            self.start.y + (math.cos(self.angle) * DISTANT_POINT),
         )
 
     def to_segment(self):
@@ -133,10 +136,10 @@ def intersecting_segments(input_: Segment, segments):
 
     for segment in segments:
         if not (
-            segment.min_x < input_.max_x
-            and segment.max_x > input_.min_x
-            and segment.min_y < input_.max_y
-            and segment.max_y > input_.min_y
+            segment.min_x <= input_.max_x
+            and segment.max_x >= input_.min_x
+            and segment.min_y <= input_.max_y
+            and segment.max_y >= input_.min_y
         ):
             continue
 

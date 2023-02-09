@@ -22,7 +22,7 @@ class Camera:
             self.location = new_location
 
     def rotate(self, angle):
-        self.direction += angle
+        self.direction = (self.direction + angle) % (2 * math.pi)
 
     def rays(self, count):
         # The idea is that we are creating a line
@@ -214,7 +214,7 @@ map_wall_segments = make_map(game_map)
 
 pygame.init()
 
-width = 1280
+width = 800
 height = 480
 
 screen = pygame.display.set_mode((width, height))

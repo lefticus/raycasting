@@ -88,24 +88,123 @@ def test_point_segment():
 
 
 def test_segment_on_segment():
-
     segment = geometry.Segment(geometry.Point(-23, 10), geometry.Point(15, -32))
 
     num_points = 40
     d_x = (segment.end.x - segment.start.x) / num_points
     d_y = (segment.end.y - segment.start.y) / num_points
 
-    expected_points = [geometry.Point(segment.start.x + d_x * count, segment.start.y + d_y * count) for count in range(num_points)]
+    expected_points = [
+        geometry.Point(segment.start.x + d_x * count, segment.start.y + d_y * count)
+        for count in range(num_points)
+    ]
 
     for point in expected_points:
         assert segment.on_segment(point)
 
-    x_parallel_points = [geometry.Point(point.x + .01, point.y) for point in expected_points]
+    x_parallel_points = [
+        geometry.Point(point.x + 0.01, point.y) for point in expected_points
+    ]
 
     for point in x_parallel_points:
         assert not segment.on_segment(point)
 
-    y_parallel_points = [geometry.Point(point.x, point.y + .01) for point in expected_points]
+    y_parallel_points = [
+        geometry.Point(point.x, point.y + 0.01) for point in expected_points
+    ]
 
     for point in y_parallel_points:
         assert not segment.on_segment(point)
+
+
+def test_ray_properties():
+    def expected_values(ray, line, segment):
+        actual_line = ray.to_line()
+        assert actual_line.slope == pytest.approx(line.slope)
+        assert actual_line.origin == line.origin
+
+        actual_segment = ray.to_segment()
+        assert actual_segment.start.x == pytest.approx(segment.start.x)
+        assert actual_segment.start.y == pytest.approx(segment.start.y)
+        assert actual_segment.end.x == pytest.approx(segment.end.x)
+        assert actual_segment.end.y == pytest.approx(segment.end.y)
+
+    zero_angle = geometry.Ray(geometry.Point(0, 0), 0)
+    expected_values(
+        zero_angle,
+        geometry.Line(geometry.Point(0, 0), geometry.VERTICAL_SLOPE),
+        geometry.Segment(
+            geometry.Point(0, 0), geometry.Point(0, geometry.DISTANT_POINT)
+        ),
+    )
+
+    forty_five_angle = geometry.Ray(geometry.Point(0, 0), math.pi / 4)
+    expected_values(
+        forty_five_angle,
+        geometry.Line(geometry.Point(0, 0), 1),
+        geometry.Segment(
+            geometry.Point(0, 0),
+            geometry.Point(
+                math.sin(math.pi / 4) * geometry.DISTANT_POINT,
+                math.cos(math.pi / 4) * geometry.DISTANT_POINT,
+            ),
+        ),
+    )
+
+    right_angle = geometry.Ray(geometry.Point(0, 0), math.pi / 2)
+    expected_values(
+        right_angle,
+        geometry.Line(geometry.Point(0, 0), 0),
+        geometry.Segment(
+            geometry.Point(0, 0), geometry.Point(geometry.DISTANT_POINT, 0)
+        ),
+    )
+
+    one_eighty_angle = geometry.Ray(geometry.Point(0, 0), math.pi)
+    expected_values(
+        one_eighty_angle,
+        geometry.Line(geometry.Point(0, 0), -geometry.VERTICAL_SLOPE),
+        geometry.Segment(
+            geometry.Point(0, 0), geometry.Point(0, -geometry.DISTANT_POINT)
+        ),
+    )
+
+
+def test_ray_segment_round_trip():
+    def round_trip(ray: geometry.Ray):
+        segment = ray.to_segment()
+        new_ray = segment.to_ray()
+
+        assert (ray.angle % (2 * math.pi)) == pytest.approx(new_ray.angle)
+        assert ray.start == new_ray.start
+
+    angle_0 = geometry.Ray(geometry.Point(0, 0), 0)
+    angle_45 = geometry.Ray(geometry.Point(0, 0), math.pi / 4)
+    angle_90 = geometry.Ray(geometry.Point(0, 0), math.pi / 2)
+    angle_180 = geometry.Ray(geometry.Point(0, 0), math.pi)
+    angle_270 = geometry.Ray(geometry.Point(0, 0), 3 * math.pi / 2)
+    angle_405 = geometry.Ray(geometry.Point(0, 0), 2 * math.pi + math.pi / 4)
+
+    round_trip(angle_0)
+    round_trip(angle_45)
+    round_trip(angle_90)
+    round_trip(angle_180)
+    round_trip(angle_270)
+    round_trip(angle_405)
+
+
+def test_segment_intersections():
+    horizontal = geometry.Segment(geometry.Point(-1, 0), geometry.Point(1, 0))
+    vertical = geometry.Segment(geometry.Point(0, -1), geometry.Point(0, 1))
+
+    intersections = geometry.intersecting_segments(horizontal, [vertical])
+
+    assert len(intersections) == 1
+    assert intersections[0][2] == vertical
+    assert intersections[0][1] == geometry.Point(0, 0)
+
+    intersections = geometry.intersecting_segments(vertical, [horizontal])
+
+    assert len(intersections) == 1
+    assert intersections[0][2] == horizontal
+    assert intersections[0][1] == geometry.Point(0, 0)
