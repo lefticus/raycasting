@@ -2,6 +2,8 @@ import geometry
 import math
 import pytest
 
+import raycasting
+
 
 def test_adding_points():
     p1 = geometry.Point(1, 2)
@@ -201,10 +203,31 @@ def test_segment_intersections():
 
     assert len(intersections) == 1
     assert intersections[0][2] == vertical
-    assert intersections[0][1] == geometry.Point(0, 0)
+    assert intersections[0][1].x == pytest.approx(0)
+    assert intersections[0][1].y == pytest.approx(0)
 
     intersections = geometry.intersecting_segments(vertical, [horizontal])
 
     assert len(intersections) == 1
     assert intersections[0][2] == horizontal
-    assert intersections[0][1] == geometry.Point(0, 0)
+    assert intersections[0][1].x == pytest.approx(0)
+    assert intersections[0][1].y == pytest.approx(0)
+
+
+def test_intersect_ray():
+    ray = geometry.Ray(geometry.Point(10, 5), math.pi)
+    segment = geometry.Segment(geometry.Point(0,0), geometry.Point(20, 0))
+    intersections = geometry.intersect_ray(ray, [segment])
+    assert len(intersections) == 1
+
+
+def test_camera_ray_intersections():
+    camera = raycasting.Camera(geometry.Point(10, 5), math.pi, math.pi/4)
+    segment = geometry.Segment(geometry.Point(0,0), geometry.Point(20, 0))
+
+    for ray, point in camera.rays(10):
+        intersections = geometry.intersect_ray(ray, [segment])
+        assert len(intersections) == 1
+
+
+
