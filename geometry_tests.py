@@ -195,12 +195,25 @@ def test_ray_segment_round_trip():
     round_trip(angle_405)
 
 
+def test_line_intersections():
+    horizontal = geometry.Line(geometry.Point(0,0), 0)
+    vertical = geometry.Line(geometry.Point(5, 5), -geometry.VERTICAL_SLOPE)
+
+    intersection1 = geometry.intercept(horizontal, vertical)
+    assert intersection1.x == pytest.approx(5)
+    assert intersection1.y == pytest.approx(0)
+
+    intersection2 = geometry.intercept(vertical, horizontal)
+    assert intersection2.x == pytest.approx(5)
+    assert intersection2.y == pytest.approx(0)
+
+
 def test_segment_intersections():
     horizontal = geometry.Segment(geometry.Point(-1, 0), geometry.Point(1, 0))
     vertical = geometry.Segment(geometry.Point(0, -1), geometry.Point(0, 1))
 
     intersections = geometry.intersecting_segments(horizontal, [vertical])
-
+    
     assert len(intersections) == 1
     assert intersections[0][2] == vertical
     assert intersections[0][1].x == pytest.approx(0)
@@ -231,7 +244,8 @@ def test_intersect_ray_to_diagonal():
 def test_camera_ray_intersections():
     camera = raycasting.Camera(geometry.Point(10, 5), math.pi, math.pi / 4)
     segment = geometry.Segment(geometry.Point(0, 0), geometry.Point(20, 0))
+    segment2 = geometry.Segment(geometry.Point(0, 0), geometry.Point(40, -40))
 
     for ray, point in camera.rays(10):
-        intersections = geometry.intersect_ray(ray, [segment])
-        assert len(intersections) == 1
+        intersections = geometry.intersect_ray(ray, [segment, segment2])
+        assert len(intersections) == 2
