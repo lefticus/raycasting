@@ -194,8 +194,8 @@ def make_map(map_string):
 #     #             ###     #     ###     ###
 #
 
-def main():
 
+def main():
     game_map = """
     ###########`&#######
     #           ` / /  #
@@ -238,7 +238,7 @@ def main():
             new_time = time.perf_counter()
             elapsed, last_time = new_time - last_time, new_time
 
-            print(f"{10 / elapsed} fps ({c.location.x},{c.location.y})")
+            print(f"{10 / elapsed} fps ({c.location.x},{c.location.y}) {c.direction}")
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

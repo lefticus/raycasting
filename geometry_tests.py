@@ -214,20 +214,24 @@ def test_segment_intersections():
     assert intersections[0][1].y == pytest.approx(0)
 
 
-def test_intersect_ray():
+def test_intersect_ray_to_perpendicular():
     ray = geometry.Ray(geometry.Point(10, 5), math.pi)
-    segment = geometry.Segment(geometry.Point(0,0), geometry.Point(20, 0))
+    segment = geometry.Segment(geometry.Point(0, 0), geometry.Point(20, 0))
+    intersections = geometry.intersect_ray(ray, [segment])
+    assert len(intersections) == 1
+
+
+def test_intersect_ray_to_diagonal():
+    ray = geometry.Ray(geometry.Point(10, 5), math.pi)
+    segment = geometry.Segment(geometry.Point(0, 0), geometry.Point(20, -20))
     intersections = geometry.intersect_ray(ray, [segment])
     assert len(intersections) == 1
 
 
 def test_camera_ray_intersections():
-    camera = raycasting.Camera(geometry.Point(10, 5), math.pi, math.pi/4)
-    segment = geometry.Segment(geometry.Point(0,0), geometry.Point(20, 0))
+    camera = raycasting.Camera(geometry.Point(10, 5), math.pi, math.pi / 4)
+    segment = geometry.Segment(geometry.Point(0, 0), geometry.Point(20, 0))
 
     for ray, point in camera.rays(10):
         intersections = geometry.intersect_ray(ray, [segment])
         assert len(intersections) == 1
-
-
-

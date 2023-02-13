@@ -115,6 +115,9 @@ class Ray:
 def intercept(l1: Line, l2: Line):
     # x=-(-y2+y1+m2*x2-m1*x1)/(m1-m2)
     # solved from point-slope form
+    if abs(l1.slope) > 10000000:
+        l1, l2 = l2, l1
+
     x = -(
         -l2.origin.y + l1.origin.y + l2.slope * l2.origin.x - l1.slope * l1.origin.x
     ) / (l1.slope - l2.slope)
