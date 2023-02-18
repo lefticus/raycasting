@@ -228,10 +228,25 @@ def test_segment_intersections():
 
 
 def test_intersect_ray_to_perpendicular():
+    # vertical ray (x = 10)
     ray = geometry.Ray(geometry.Point(10, 5), math.pi)
+    # horizontal segment (y = 0, x=[0, 20])
     segment = geometry.Segment(geometry.Point(0, 0), geometry.Point(20, 0))
+    # they should intersect at (10, 0)
     intersections = geometry.intersect_ray(ray, [segment])
     assert len(intersections) == 1
+    assert intersections[0][1].x == pytest.approx(10)
+    assert intersections[0][1].y == pytest.approx(0)
+
+    # horizontal ray (y = 0)
+    ray = geometry.Ray(geometry.Point(0, 0), math.pi / 2)
+    # vertical segment (x = 4, y=[-10, 10])
+    segment = geometry.Segment(geometry.Point(4, -10), geometry.Point(4, 10))
+    # they should intersect at (4, 0)
+    intersections = geometry.intersect_ray(ray, [segment])
+    assert len(intersections) == 1
+    assert intersections[0][1].x == pytest.approx(4)
+    assert intersections[0][1].y == pytest.approx(0)
 
 
 def test_intersect_ray_to_diagonal():
