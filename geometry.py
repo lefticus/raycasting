@@ -21,11 +21,6 @@ class Point(typing.NamedTuple):
         return Point(self.x + other.x, self.y + other.y)
 
 
-class Line(typing.NamedTuple):
-    origin: Point
-    slope: float
-
-
 @dataclasses.dataclass(unsafe_hash=True)
 class Segment:
     start: Point
@@ -86,14 +81,6 @@ class Segment:
         else:
             return (self.end.y - self.start.y) / (self.end.x - self.start.x)
 
-    @functools.cached_property
-    def line(self):
-        if self.start == self.end:
-            # no possible valid Ray object
-            raise RuntimeError("Cannot create Line from identical segment points")
-
-        return Line(self.start, self.slope)
-
     def on_segment(self, p: Point):
         if p == self.start:
             return True
@@ -125,15 +112,6 @@ class Ray:
     start: Point
     angle: float
 
-    def to_line(self):
-        angle = self.angle % (2 * math.pi)
-        if math.isclose(angle, 0):
-            return Line(self.start, VERTICAL_SLOPE)
-        elif math.isclose(angle, math.pi):
-            return Line(self.start, -VERTICAL_SLOPE)
-        else:
-            return Line(self.start, math.cos(angle) / math.sin(angle))
-
     def distant_point(self):
         return Point(
             self.start.x + (math.sin(self.angle) * DISTANT_POINT),
@@ -142,25 +120,6 @@ class Ray:
 
     def to_segment(self):
         return Segment(self.start, self.distant_point())
-
-
-def intercept(l1: Line, l2: Line):
-    # slope approaches infinity, things go weird
-    # from Sergey Serb: Swap lines if abs(l1.slope) > abs(l2.slope)
-    if abs(l1.slope) > abs(l2.slope):
-        l1, l2 = l2, l1
-
-    # x=-(-y2+y1+m2*x2-m1*x1)/(m1-m2)
-    # solved from point-slope form
-
-    x = -(
-        -l2.origin.y + l1.origin.y + l2.slope * l2.origin.x - l1.slope * l1.origin.x
-    ) / (l1.slope - l2.slope)
-
-    # just plug it back into one of the line formulas and get the answer!
-    y = l1.slope * (x - l1.origin.x) + l1.origin.y
-
-    return Point(x, y)
 
 
 def intersect_ray(ray: Ray, segments):
