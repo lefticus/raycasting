@@ -31,6 +31,38 @@ class Segment:
     start: Point
     end: Point
 
+    def intersection(self, other):
+        # This version is cribbed from ChatGPT, and it passes our tests for
+        # line intersection calculations
+
+        # Calculate the differences between the start and end points of the two segments
+
+        x1, y1 = self.start.x, self.start.y
+        x2, y2 = self.end.x, self.end.y
+
+        x3, y3 = other.start.x, other.start.y
+        x4, y4 = other.end.x, other.end.y
+
+        # Calculate the denominator of the t and u values in the parametric equations of the two segments
+        denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
+
+        # Check if the two segments are parallel (i.e., their parametric equations don't intersect)
+        if denominator == 0:
+            return None
+
+        # Calculate the t and u values in the parametric equations of the two segments
+        t = ((x3 - x1) * (y4 - y3) - (y3 - y1) * (x4 - x3)) / denominator
+        u = ((x1 - x2) * (y3 - y1) - (y1 - y2) * (x3 - x1)) / denominator
+
+        # Check if the two segments intersect
+        if 0 <= t <= 1 and 0 <= u <= 1:
+            # Calculate the point of intersection
+            x = x1 + t * (x2 - x1)
+            y = y1 + t * (y2 - y1)
+            return Point(x, y)
+        else:
+            return None
+
     @functools.cached_property
     def min_x(self):
         return min(self.start.x, self.end.x)
@@ -136,26 +168,14 @@ def intersect_ray(ray: Ray, segments):
 
 
 def intersecting_segments(input_: Segment, segments):
-    input_line = input_.line
-
     result = []
 
     for segment in segments:
-        if not (
-            segment.min_x <= input_.max_x
-            and segment.max_x >= input_.min_x
-            and segment.min_y <= input_.max_y
-            and segment.max_y >= input_.min_y
-        ):
-            continue
+        intersection = input_.intersection(segment)
 
-        segment_line = segment.line
-
-        # if not parallel
-        if input_line.slope != segment_line.slope:
-            p = intercept(input_line, segment_line)
-
-            if segment.in_bounds(p) and input_.in_bounds(p):
-                result.append((math.dist(input_.start, p), p, segment))
+        if intersection is not None:
+            result.append(
+                (math.dist(input_.start, intersection), intersection, segment)
+            )
 
     return result

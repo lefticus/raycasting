@@ -196,7 +196,7 @@ def test_ray_segment_round_trip():
 
 
 def test_line_intersections():
-    horizontal = geometry.Line(geometry.Point(0,0), 0)
+    horizontal = geometry.Line(geometry.Point(0, 0), 0)
     vertical = geometry.Line(geometry.Point(5, 5), -geometry.VERTICAL_SLOPE)
 
     intersection1 = geometry.intercept(horizontal, vertical)
@@ -213,7 +213,7 @@ def test_segment_intersections():
     vertical = geometry.Segment(geometry.Point(0, -1), geometry.Point(0, 1))
 
     intersections = geometry.intersecting_segments(horizontal, [vertical])
-    
+
     assert len(intersections) == 1
     assert intersections[0][2] == vertical
     assert intersections[0][1].x == pytest.approx(0)
