@@ -141,7 +141,7 @@ def make_map(map_string):
         remove_list = []
         for s in result:
             for n in result:
-                if s.end.x == n.start.x and s.end.y == n.start.y and n.slope == s.slope:
+                if s.end.x == n.start.x and s.end.y == n.start.y and n.parallel(s):
                     remove_list += [n, s]
                     result.append(
                         Segment(Point(s.start.x, s.start.y), Point(n.end.x, n.end.y))
@@ -151,7 +151,7 @@ def make_map(map_string):
                     s is not n
                     and s.end.x == n.end.x
                     and s.end.y == n.end.y
-                    and n.slope == s.slope
+                    and s.parallel(n)
                 ):
                     remove_list += [n, s]
                     result.append(
@@ -164,7 +164,7 @@ def make_map(map_string):
                     s is not n
                     and s.start.x == n.start.x
                     and s.start.y == n.start.y
-                    and n.slope == s.slope
+                    and s.parallel(n)
                 ):
                     remove_list += [n, s]
                     result.append(

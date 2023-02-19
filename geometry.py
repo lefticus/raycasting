@@ -3,7 +3,6 @@ import dataclasses
 import typing
 import math
 
-VERTICAL_SLOPE = 1e100
 DISTANT_POINT = 100
 
 
@@ -25,6 +24,17 @@ class Point(typing.NamedTuple):
 class Segment:
     start: Point
     end: Point
+
+    def parallel(self, other):
+        # Todo - de-duplicate this code
+        x1, y1 = self.start.x, self.start.y
+        x2, y2 = self.end.x, self.end.y
+
+        x3, y3 = other.start.x, other.start.y
+        x4, y4 = other.end.x, other.end.y
+
+        # Calculate the denominator of the t and u values in the parametric equations of the two segments
+        return ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)) == 0
 
     def intersection(self, other):
         # This version is cribbed from ChatGPT, and it passes our tests for
@@ -73,20 +83,6 @@ class Segment:
     @functools.cached_property
     def max_y(self):
         return max(self.start.y, self.end.y)
-
-    @functools.cached_property
-    def slope(self):
-        if self.start.x == self.end.x:
-            return VERTICAL_SLOPE
-        else:
-            return (self.end.y - self.start.y) / (self.end.x - self.start.x)
-
-    def on_segment(self, p: Point):
-        if p == self.start:
-            return True
-
-        segment = Segment(self.start, p)
-        return math.isclose(segment.slope, self.slope) and self.in_bounds(p)
 
     def in_bounds(self, p: Point):
         return in_range(self.min_x, self.max_x, p.x) and in_range(

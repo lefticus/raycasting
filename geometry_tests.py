@@ -14,13 +14,12 @@ def test_adding_points():
 
 
 def test_segment_properties():
-    def expected_values(segment, min_x, min_y, max_x, max_y, slope, ray):
+    def expected_values(segment, min_x, min_y, max_x, max_y, ray):
         assert segment.min_x == min_x
         assert segment.min_y == min_y
         assert segment.max_x == max_x
         assert segment.max_y == max_y
 
-        assert segment.slope == slope
         assert segment.to_ray() == ray
 
     zero_slope = geometry.Segment(geometry.Point(0, 0), geometry.Point(1, 0))
@@ -30,7 +29,6 @@ def test_segment_properties():
         0,
         1,
         0,
-        0,
         geometry.Ray(geometry.Point(0, 0), math.pi / 2),
     )
 
@@ -39,7 +37,6 @@ def test_segment_properties():
         one_slope,
         0,
         0,
-        1,
         1,
         1,
         geometry.Ray(geometry.Point(0, 0), math.pi / 4),
@@ -52,7 +49,6 @@ def test_segment_properties():
         -1,
         1,
         0,
-        -1,
         geometry.Ray(geometry.Point(0, 0), 3 * math.pi / 4),
     )
 
@@ -63,7 +59,6 @@ def test_segment_properties():
         0,
         0,
         1,
-        geometry.VERTICAL_SLOPE,
         geometry.Ray(geometry.Point(0, 0), 0),
     )
 
@@ -79,6 +74,7 @@ def test_point_segment():
         _ = point_segment.to_ray()
 
 
+"""
 def test_segment_on_segment():
     segment = geometry.Segment(geometry.Point(-23, 10), geometry.Point(15, -32))
 
@@ -107,6 +103,7 @@ def test_segment_on_segment():
 
     for point in y_parallel_points:
         assert not segment.on_segment(point)
+"""
 
 
 def test_ray_properties():
