@@ -6,7 +6,7 @@ from geometry import *
 class Camera:
     def __init__(self, location: Point, direction, viewing_angle):
         self.location = location
-        self.direction = direction
+        self.direction = direction  # angle from y-axis, "compass" style
         self.viewing_angle = viewing_angle
         self.planar_projection = True
 
@@ -129,6 +129,8 @@ def make_map(map_string):
         y -= 1
 
     print(f"Segments: {len(result)}")
+
+    #return result
 
     # if any segment exists twice, then it was between two map items
     # and both can be removed!

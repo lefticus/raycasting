@@ -37,6 +37,16 @@ class Segment:
         return ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)) == 0
 
     def intersection(self, other):
+
+        if not (
+            self.min_x <= other.max_x
+            and self.max_x >= other.min_x
+            and self.min_y <= other.max_y
+            and self.max_y >= other.min_y
+        ):
+            return None
+
+
         # This version is cribbed from ChatGPT, and it passes our tests for
         # line intersection calculations
 
@@ -106,7 +116,7 @@ class Segment:
 @dataclasses.dataclass
 class Ray:
     start: Point
-    angle: float
+    angle: float  # Angle from the y-axis, right. "compass coordinates"
 
     def distant_point(self):
         return Point(
