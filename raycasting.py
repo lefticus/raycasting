@@ -275,6 +275,7 @@ def main():
 
     frame = 0
     last_time = time.perf_counter()
+    report_time = last_time
 
     fisheye_distance_correction = True
     minimap_on = True
@@ -283,13 +284,13 @@ def main():
         pygame.display.get_surface().fill((0, 0, 0))
 
         frame += 1
+        new_time = time.perf_counter()
+        elapsed, last_time = new_time - last_time, new_time
 
         if frame % 10 == 0:
-            new_time = time.perf_counter()
-            elapsed, last_time = new_time - last_time, new_time
-
+            report_elapsed, report_time = new_time - report_time, new_time
             print(
-                f"{10 / elapsed} fps ({camera.location.x},{camera.location.y}) {camera.direction}"
+                f"{10 / report_elapsed} fps ({camera.location.x},{camera.location.y}) {camera.direction}"
             )
 
         for event in pygame.event.get():
@@ -306,13 +307,13 @@ def main():
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_UP]:
-            camera.try_move(0.08, map_wall_segments)
+            camera.try_move(2.0 * elapsed, map_wall_segments)
         if keys[pygame.K_DOWN]:
-            camera.try_move(-0.08, map_wall_segments)
+            camera.try_move(-2.0 * elapsed, map_wall_segments)
         if keys[pygame.K_RIGHT]:
-            camera.rotate(math.pi / 60)
+            camera.rotate(math.pi / 3 * elapsed)
         if keys[pygame.K_LEFT]:
-            camera.rotate(-math.pi / 60)
+            camera.rotate(-math.pi / 3 * elapsed)
 
         col = 0
 
