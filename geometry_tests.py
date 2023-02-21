@@ -74,38 +74,6 @@ def test_point_segment():
         _ = point_segment.to_ray()
 
 
-"""
-def test_segment_on_segment():
-    segment = geometry.Segment(geometry.Point(-23, 10), geometry.Point(15, -32))
-
-    num_points = 40
-    d_x = (segment.end.x - segment.start.x) / num_points
-    d_y = (segment.end.y - segment.start.y) / num_points
-
-    expected_points = [
-        geometry.Point(segment.start.x + d_x * count, segment.start.y + d_y * count)
-        for count in range(num_points)
-    ]
-
-    for point in expected_points:
-        assert segment.on_segment(point)
-
-    x_parallel_points = [
-        geometry.Point(point.x + 0.01, point.y) for point in expected_points
-    ]
-
-    for point in x_parallel_points:
-        assert not segment.on_segment(point)
-
-    y_parallel_points = [
-        geometry.Point(point.x, point.y + 0.01) for point in expected_points
-    ]
-
-    for point in y_parallel_points:
-        assert not segment.on_segment(point)
-"""
-
-
 def test_ray_properties():
     def expected_values(ray, segment):
         actual_segment = ray.to_segment()

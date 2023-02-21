@@ -24,14 +24,20 @@ class Camera:
     def rotate(self, angle):
         self.direction = (self.direction + angle) % (2 * math.pi)
 
+    def start_angle(self) -> float:
+        return self.direction - self.viewing_angle / 2
+
+    def end_angle(self) -> float:
+        return self.start_angle() + self.viewing_angle
+
     def rays(self, count):
         # The idea is that we are creating a line
         # through which to draw the rays, so we get a more correct
         # (not curved) distribution of rays, but we still need
         # to do a height correction later to flatten it out
 
-        start_angle = self.direction - self.viewing_angle / 2
-        end_angle = start_angle + self.viewing_angle
+        start_angle = self.start_angle()
+        end_angle = self.end_angle()
 
         if self.planar_projection:
             viewing_plane_start = self.location + Point(
@@ -130,7 +136,7 @@ def make_map(map_string):
 
     print(f"Segments: {len(result)}")
 
-    #return result
+    # return result
 
     # if any segment exists twice, then it was between two map items
     # and both can be removed!
@@ -197,6 +203,46 @@ def make_map(map_string):
 #
 
 
+class Map2D:
+    def __init__(self, width, height, scale):
+        self.width = width
+        self.height = height
+        self.scale = scale
+        self.center = Point(0, 0)
+
+    def translate_and_scale(self, p: Point) -> Point:
+        new_p = p - self.center
+        new_x = new_p.x * self.scale
+        new_y = self.height - new_p.y * self.scale
+        return Point(new_x, new_y) + Point(self.width * 0.5, -self.height * 0.5)
+
+    def draw_camera(self, surface, camera: Camera) -> None:
+        pygame.draw.circle(
+            surface,
+            (0, 0, 255),
+            self.translate_and_scale(camera.location),
+            self.scale / 10,
+        )
+
+        start_segment = Ray(camera.location, camera.start_angle()).to_segment(2)
+        end_segment = Ray(camera.location, camera.end_angle()).to_segment(2)
+
+        for segment in (start_segment, end_segment):
+            pygame.draw.line(
+                surface,
+                (128, 128, 128),
+                self.translate_and_scale(segment.start),
+                self.translate_and_scale(segment.end),
+            )
+
+    def draw_map(self, surface, segments: list[Segment]) -> None:
+        for segment in segments:
+            start = self.translate_and_scale(segment.start)
+            end = self.translate_and_scale(segment.end)
+
+            pygame.draw.line(surface, (255, 255, 255), start, end)
+
+
 def main():
     game_map = """
     ###########`&#######
@@ -217,19 +263,21 @@ def main():
 
     pygame.init()
 
-    width = 800
+    width = 1280
     height = 480
 
+    map2d = Map2D(height / 3, height / 3, 30)
     screen = pygame.display.set_mode((width, height))
 
     FOV = 2 * math.atan((width / 800) * math.tan((math.pi / 2) / 2))
 
-    c = Camera(Point(-0.5, -0.5), math.pi / 2, FOV)
+    camera = Camera(Point(-0.5, -0.5), math.pi / 2, FOV)
 
     frame = 0
     last_time = time.perf_counter()
 
     fisheye_distance_correction = True
+    minimap_on = True
 
     while True:
         pygame.display.get_surface().fill((0, 0, 0))
@@ -240,34 +288,38 @@ def main():
             new_time = time.perf_counter()
             elapsed, last_time = new_time - last_time, new_time
 
-            print(f"{10 / elapsed} fps ({c.location.x},{c.location.y}) {c.direction}")
+            print(
+                f"{10 / elapsed} fps ({camera.location.x},{camera.location.y}) {camera.direction}"
+            )
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
-                    c.planar_projection = not c.planar_projection
+                    camera.planar_projection = not camera.planar_projection
                 if event.key == pygame.K_2:
                     fisheye_distance_correction = not fisheye_distance_correction
+                if event.key == pygame.K_m:
+                    minimap_on = not minimap_on
 
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_UP]:
-            c.try_move(0.08, map_wall_segments)
+            camera.try_move(0.08, map_wall_segments)
         if keys[pygame.K_DOWN]:
-            c.try_move(-0.08, map_wall_segments)
+            camera.try_move(-0.08, map_wall_segments)
         if keys[pygame.K_RIGHT]:
-            c.rotate(math.pi / 60)
+            camera.rotate(math.pi / 60)
         if keys[pygame.K_LEFT]:
-            c.rotate(-math.pi / 60)
+            camera.rotate(-math.pi / 60)
 
         col = 0
 
         last_match = None
         last_wall = None
 
-        for r, segment_point in c.rays(width):
+        for r, segment_point in camera.rays(width):
             matches = intersect_ray(r, map_wall_segments)
 
             def sort_criteria(line):
@@ -282,7 +334,7 @@ def main():
 
                 # Distance correction from https://gamedev.stackexchange.com/questions/45295/raycasting-fisheye-effect-question
                 corrected_distance = (
-                    distance_from_eye * math.cos(c.direction - r.angle)
+                    distance_from_eye * math.cos(camera.direction - r.angle)
                     if fisheye_distance_correction
                     else distance_from_eye
                 )
@@ -335,6 +387,15 @@ def main():
                 last_match = None
 
             col += 1
+
+        if minimap_on:
+            map_surface = pygame.Surface((map2d.width, map2d.height))
+            map2d.center = camera.location
+            map2d.draw_map(map_surface, map_wall_segments)
+            map2d.draw_camera(map_surface, camera)
+            pygame.display.get_surface().blit(
+                map_surface, (width - map2d.width, height - map2d.height)
+            )
 
         pygame.display.flip()
 

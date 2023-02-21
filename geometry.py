@@ -19,6 +19,9 @@ class Point(typing.NamedTuple):
     def __add__(self, other):
         return Point(self.x + other.x, self.y + other.y)
 
+    def __sub__(self, other):
+        return Point(self.x - other.x, self.y - other.y)
+
 
 @dataclasses.dataclass(unsafe_hash=True)
 class Segment:
@@ -37,7 +40,6 @@ class Segment:
         return ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)) == 0
 
     def intersection(self, other):
-
         if not (
             self.min_x <= other.max_x
             and self.max_x >= other.min_x
@@ -45,7 +47,6 @@ class Segment:
             and self.max_y >= other.min_y
         ):
             return None
-
 
         # This version is cribbed from ChatGPT, and it passes our tests for
         # line intersection calculations
@@ -118,14 +119,14 @@ class Ray:
     start: Point
     angle: float  # Angle from the y-axis, right. "compass coordinates"
 
-    def distant_point(self):
+    def end_point(self, distance):
         return Point(
-            self.start.x + (math.sin(self.angle) * DISTANT_POINT),
-            self.start.y + (math.cos(self.angle) * DISTANT_POINT),
+            self.start.x + (math.sin(self.angle) * distance),
+            self.start.y + (math.cos(self.angle) * distance),
         )
 
-    def to_segment(self):
-        return Segment(self.start, self.distant_point())
+    def to_segment(self, distance=DISTANT_POINT):
+        return Segment(self.start, self.end_point(distance))
 
 
 def intersect_ray(ray: Ray, segments):
