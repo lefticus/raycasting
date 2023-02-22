@@ -1,4 +1,4 @@
-import geometry
+import core.geometry as geometry
 import math
 import pytest
 

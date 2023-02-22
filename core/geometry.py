@@ -2,6 +2,8 @@ import functools
 import dataclasses
 import typing
 import math
+from numbers import Number
+from typing import List
 
 DISTANT_POINT = 100
 
@@ -13,20 +15,57 @@ def in_range(min_, max_, value):
 
 
 class Point(typing.NamedTuple):
-    x: float
-    y: float
+    x: float = 0.0
+    y: float = 0.0
 
     def __add__(self, other):
         return Point(self.x + other.x, self.y + other.y)
 
     def __sub__(self, other):
         return Point(self.x - other.x, self.y - other.y)
+    
+    def __mul__(self, other):
+        if isinstance(other, Number):
+            return Point(self.x * other, self.y * other)
+        if isinstance(other, Point):
+            return Point(self.x * other.x, self.y * other.y)
+        raise NotImplemented()
+    
+    def __div__(self, other):
+        if isinstance(other, Point):
+            return Point(self.x / other.x, self.y / other.y)
+        raise NotImplemented()
+    
+    def __truediv__(self, other):
+        if isinstance(other, Number):
+            return Point(self.x / other, self.y / other)
+        raise NotImplemented()
 
+    def length(self):
+        return math.sqrt(self.x * self.x + self.y * self.y)
+    
+    def normal(self):
+        length = self.length()
+        if length == 0.0 or math.isclose(length, 1.0):
+            return self
+        return Point(self.x / length, self.y / length)
+    
+    def rotate(self, angle: float):
+        cos: float = math.cos(angle)
+        sin: float = math.sin(angle)
+        return Point(cos, sin) * self.x + Point(-sin, cos) * self.y
+
+@dataclasses.dataclass
+class IntersectResult:
+    hit: bool = False
+    distance: float = 0.0
+    segment: 'Segment' = None
+    point: Point = Point(0.0, 0.0)
 
 @dataclasses.dataclass(unsafe_hash=True)
 class Segment:
-    start: Point
-    end: Point
+    start: Point = Point()
+    end: Point = Point()
 
     def parallel(self, other):
         # Todo - de-duplicate this code
@@ -94,6 +133,21 @@ class Segment:
     @functools.cached_property
     def max_y(self):
         return max(self.start.y, self.end.y)
+    
+    def delta(self):
+        return (self.end - self.start)
+    
+    def invdelta(self):
+        return (self.start - self.end)
+    
+    def mid(self):
+        return self.start + self.delta() * 0.5
+
+    def normal(self):
+        return self.delta().normal()
+    
+    def surface_normal(self):
+        return self.normal().rotate(math.pi / 2)
 
     def in_bounds(self, p: Point):
         return in_range(self.min_x, self.max_x, p.x) and in_range(
@@ -111,6 +165,17 @@ class Segment:
             self.start,
             -math.atan2(self.end.y - self.start.y, self.end.x - self.start.x)
             + math.pi / 2,
+        )
+    
+    def intersect_list(self, segments: List['Segment']) -> IntersectResult:
+        results: tuple[float, Point, Segment] = intersecting_segments(self, segments)
+        results.sort(key=lambda result: result[0])
+        
+        return IntersectResult() if len(results) == 0 else IntersectResult(
+            True,
+            results[0][0],
+            results[0][2],
+            results[0][1]
         )
 
 

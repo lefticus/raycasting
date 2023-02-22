@@ -1,7 +1,7 @@
 import pygame
 import time
-from geometry import *
-
+from core.geometry import *
+from typing import List
 
 class Camera:
     def __init__(self, location: Point, direction, viewing_angle):
@@ -235,7 +235,7 @@ class Map2D:
                 self.translate_and_scale(segment.end),
             )
 
-    def draw_map(self, surface, segments: list[Segment]) -> None:
+    def draw_map(self, surface, segments: List[Segment]) -> None:
         for segment in segments:
             start = self.translate_and_scale(segment.start)
             end = self.translate_and_scale(segment.end)
